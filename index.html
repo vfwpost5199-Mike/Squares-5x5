@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>McV Class of 2027 Squares</title>
+  <meta name="theme-color" content="#111827">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f9fafb;color:#111827;}
+    .container{max-width:420px;margin:auto;padding:14px;}
+    .pool-name{text-align:center;margin:8px 0 10px;}
+    .title-line1{font-size:22px;font-weight:900;line-height:1.15;}
+    .title-line2{font-size:16px;font-weight:800;margin-top:2px;}
+    h2{text-align:center;margin:12px 0 8px;}
+    .countdown{text-align:center;font-weight:900;padding:10px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;margin:8px 0 12px;}
+    .countdown.green{background:#ecfdf5;border-color:#10b981;}
+    .countdown.yellow{background:#fffbeb;border-color:#f59e0b;}
+    .countdown.red{background:#fef2f2;border-color:#ef4444;}
+    .countdown.soldout{background:#111827;color:#fff;border-color:#111827;}
+    .stats{text-align:center;margin:8px 0 10px;font-weight:800;background:#fefcbf;padding:8px;border-radius:8px;}
+    .sheet-link{display:block;text-align:center;margin:0 0 14px;padding:10px 12px;background:#fee2e2;border:2px solid #dc2626;border-radius:10px;color:#b91c1c;font-weight:900;text-decoration:none;font-size:16px;}
+    .sheet-link:hover{background:#fecaca;}
+    .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;}
+    .box{padding:16px 4px;text-align:center;border-radius:10px;font-weight:800;cursor:pointer;background:#e5e7eb;border:1px solid #d1d5db;position:relative;user-select:none;font-size:18px;}
+    .box.claimed{background:#dc2626;border-color:#b91c1c;color:#fff;cursor:not-allowed;}
+    .box.claimed::after{content:"✓";position:absolute;bottom:4px;right:6px;font-size:14px;}
+    .box.selected{background:#2563eb;color:#fff;border-color:#1d4ed8;}
+    label{font-size:14px;font-weight:800;margin:10px 0 4px;display:block;}
+    input{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:16px;box-sizing:border-box;}
+    button{width:100%;padding:14px;margin-top:16px;border:none;border-radius:12px;background:#111827;color:#fff;font-size:16px;font-weight:900;}
+    button:disabled{opacity:.55;}
+    #payNotice{display:none;margin:18px 0;padding:12px;border-radius:12px;background:#ecfdf5;border:1px solid #10b981;color:#065f46;font-weight:900;text-align:center;}
+    .payments{margin-top:24px;padding-top:16px;border-top:2px dashed #e5e7eb;text-align:center;}
+    .fine{font-size:13px;color:#6b7280;font-weight:800;}
+    .soldout-note{display:none;margin:18px 0;padding:12px;border-radius:12px;background:#f3f4f6;font-weight:900;text-align:center;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="pool-name">
+      <div class="title-line1">McV Class of 2027</div>
+      <div class="title-line2">5x5 Squares</div>
+    </div>
+    <h2>Claim a Square</h2>
+    <div class="countdown" id="countdown"><div class="big">Loading…</div></div>
+    <div class="stats" id="stats">Loading stats...</div>
+    <a class="sheet-link"
+       href="https://docs.google.com/spreadsheets/d/1tW5d3iOPab3kmNLkCTMt-xkjg5vMByRzfn0n0I4pv30/edit?usp=sharing"
+       target="_blank"
+       rel="noopener">
+      Link to Player Sheet
+    </a>
+    <div class="grid" id="grid"></div>
+    <div id="selectedBox" style="font-weight:800;text-align:center;margin:8px 0;">Selected: None</div>
+
+    <label for="name">Name *</label>
+    <input id="name" required autocomplete="name">
+    <label for="phone">Cell Phone (10 digits) *</label>
+    <input id="phone" maxlength="10" inputmode="numeric" required placeholder="Numbers only">
+    <label for="boxname">Box Name *</label>
+    <input id="boxname" maxlength="24" required placeholder="Appears in square">
+    <label for="email">Email *</label>
+    <input id="email" type="email" required placeholder="you@email.com">
+
+    <button id="claimBtn" onclick="submitClaim()">Claim Square</button>
+    <div id="payNotice">Claim saved – please pay to secure your square.</div>
+    <div class="soldout-note" id="soldOutNote">SOLD OUT – All 25 squares claimed.</div>
+    <div class="payments" id="payments">
+      <p class="fine">Pay to hold your square</p>
+      <p style="margin:10px 0;">
+        <a href="https://tinyurl.com/5x5-Squares-Payment"
+           target="_blank"
+           rel="noopener"
+           style="display:inline-block;padding:12px 18px;background:#008CFF;color:#fff;text-decoration:none;border-radius:10px;font-weight:900;">
+          Pay with Venmo
+        </a>
+      </p>
+      <p class="fine" style="margin-top:14px;">Zelle</p>
+      <p style="margin:4px 0;font-weight:900;">Michael Leake<br>(516) 860-8128</p>
+      <p class="fine">Include your Box # in the payment note<br>Cash also accepted</p>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIuvkc6HFAN-68hlzng-jyQhwVuPgz-xlrvNVreat_oKp4AkozlrkjnCqND9jhEZ9Gnw/exec';
+    const TOTAL = 25;
+
+    let selected = null, selectedEl = null, claimed = new Set(), isSubmitting = false;
+    const gridEl = document.getElementById('grid');
+    const countdownEl = document.getElementById('countdown');
+    const statsEl = document.getElementById('stats');
+    const claimBtn = document.getElementById('claimBtn');
+    const payNotice = document.getElementById('payNotice');
+    const soldOutNote = document.getElementById('soldOutNote');
+    const paymentsEl = document.getElementById('payments');
+
+    function buildGrid() {
+      gridEl.innerHTML = '';
+      for (let i = 1; i <= TOTAL; i++) {
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.textContent = i;
+        box.dataset.box = i;
+        box.onclick = () => selectBox(i, box);
+        gridEl.appendChild(box);
+      }
+    }
+
+    function selectBox(num, el) {
+      if (claimed.has(num) || claimBtn.disabled) return;
+      if (selectedEl) selectedEl.classList.remove('selected');
+      el.classList.add('selected');
+      selectedEl = el;
+      selected = num;
+      document.getElementById('selectedBox').textContent = 'Selected: ' + num;
+    }
+
+    function updateUI(stats) {
+      const remaining = stats ? stats.remaining : TOTAL - claimed.size;
+      const claimedCount = stats ? stats.claimed : claimed.size;
+
+      countdownEl.className = 'countdown';
+      if (remaining <= 0) countdownEl.classList.add('soldout');
+      else if (remaining <= 5) countdownEl.classList.add('red');
+      else if (remaining <= 10) countdownEl.classList.add('yellow');
+      else countdownEl.classList.add('green');
+
+      countdownEl.innerHTML = remaining <= 0
+        ? `<div class="big"><strong>SOLD OUT</strong></div>`
+        : `<div class="big">${remaining} Remaining</div><div class="small">${claimedCount} claimed</div>`;
+
+      statsEl.textContent = `${claimedCount} claimed • ${remaining} remaining`;
+      claimBtn.disabled = remaining <= 0;
+      paymentsEl.style.display = remaining <= 0 ? 'none' : 'block';
+      soldOutNote.style.display = remaining <= 0 ? 'block' : 'none';
+      payNotice.style.display = 'none';
+    }
+
+    function applyClaimed() {
+      document.querySelectorAll('.box').forEach(box => {
+        const num = Number(box.dataset.box);
+        box.classList.toggle('claimed', claimed.has(num));
+        if (claimed.has(num) && selected === num) {
+          box.classList.remove('selected');
+          selected = null;
+          selectedEl = null;
+          document.getElementById('selectedBox').textContent = 'Selected: None';
+        }
+      });
+    }
+
+    async function loadData() {
+      try {
+        const claimedRes = await fetch(SCRIPT_URL + '?action=getClaimed', { redirect: 'follow' });
+        claimed = new Set(await claimedRes.json());
+        applyClaimed();
+        const statsRes = await fetch(SCRIPT_URL + '?action=getStats', { redirect: 'follow' });
+        updateUI(await statsRes.json());
+      } catch (err) {
+        console.error(err);
+        updateUI();
+      }
+    }
+
+    async function submitClaim() {
+      if (isSubmitting || !selected) return;
+      isSubmitting = true;
+      claimBtn.disabled = true;
+      claimBtn.textContent = 'Saving…';
+
+      const payload = {
+        box: selected,
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.replace(/\D/g, ''),
+        boxName: document.getElementById('boxname').value.trim(),
+        email: document.getElementById('email').value.trim()
+      };
+
+      if (!payload.name || payload.phone.length !== 10 || !payload.boxName || !payload.email.includes('@')) {
+        alert('All fields are required.');
+        resetButton();
+        return;
+      }
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.error) throw new Error(result.error);
+
+        claimed.add(selected);
+        applyClaimed();
+        await loadData();
+        payNotice.style.display = 'block';
+        if (selectedEl) selectedEl.classList.remove('selected');
+        selected = null;
+        selectedEl = null;
+        document.getElementById('selectedBox').textContent = 'Selected: None';
+        paymentsEl.scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        alert(err.message || 'Claim failed.');
+        await loadData();
+      } finally {
+        resetButton();
+      }
+    }
+
+    function resetButton() {
+      isSubmitting = false;
+      claimBtn.disabled = false;
+      claimBtn.textContent = 'Claim Square';
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    }
+
+    buildGrid();
+    loadData();
+    setInterval(loadData, 20000);
+  </script>
+</body>
+</html>
