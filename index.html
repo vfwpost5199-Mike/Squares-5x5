@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>McV Class of 2027 Squares</title>
+  <meta name="theme-color" content="#111827">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="dns-prefetch" href="https://script.google.com">
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --surface: #ffffff;
+      --fg: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-hover: #1e40af;
+      --claimed: #dc2626;
+      --claimed-border: #b91c1c;
+      --ok: #047857;
+      --ok-bg: #ecfdf5;
+      --warn-bg: #fffbeb;
+      --warn-border: #f59e0b;
+      --hot-bg: #fef2f2;
+      --hot-border: #ef4444;
+      --ink: #111827;
+      --radius: 12px;
+      --font: "Figtree", system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: var(--font); margin: 0; background: var(--bg); color: var(--fg); }
+    .container { max-width: 420px; margin: auto; padding: 14px; padding-bottom: 48px; }
+    .pool-name { text-align: center; margin: 8px 0 10px; }
+    .title-line1 { font-size: 22px; font-weight: 800; line-height: 1.15; letter-spacing: -0.03em; }
+    .title-line2 { font-size: 16px; font-weight: 700; margin-top: 2px; color: var(--muted); }
+    h2 { text-align: center; margin: 12px 0 8px; font-size: 18px; font-weight: 800; }
+    .countdown { text-align: center; font-weight: 800; padding: 10px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); margin: 8px 0 12px; }
+    .countdown .big { font-size: 18px; }
+    .countdown .small { font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+    .countdown.green { background: var(--ok-bg); border-color: #10b981; }
+    .countdown.yellow { background: var(--warn-bg); border-color: var(--warn-border); }
+    .countdown.red { background: var(--hot-bg); border-color: var(--hot-border); }
+    .countdown.soldout { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .countdown.soldout .small { color: #d1d5db; }
+    .stats { text-align: center; margin: 8px 0 10px; font-weight: 700; background: var(--surface); border: 1px solid var(--border); padding: 8px; border-radius: 8px; font-variant-numeric: tabular-nums; }
+    .sheet-link { display: block; text-align: center; margin: 0 0 14px; padding: 12px; background: #fee2e2; border: 2px solid #dc2626; border-radius: 10px; color: #b91c1c; font-weight: 800; text-decoration: none; font-size: 16px; min-height: 44px; }
+    .sheet-link:hover { background: #fecaca; }
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+    .box { padding: 16px 4px; text-align: center; border-radius: 10px; font-weight: 800; cursor: pointer; background: #e5e7eb; border: 1px solid #d1d5db; position: relative; user-select: none; font-size: 18px; min-height: 52px; }
+    .box.claimed { background: var(--claimed); border-color: var(--claimed-border); color: #fff; cursor: not-allowed; }
+    .box.claimed::after { content: "✓"; position: absolute; bottom: 4px; right: 6px; font-size: 14px; }
+    .box.selected { background: var(--accent); color: #fff; border-color: var(--accent-hover); }
+    label { font-size: 14px; font-weight: 700; margin: 10px 0 4px; display: block; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; background: var(--surface); color: var(--fg); min-height: 44px; }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .field-error { color: var(--claimed); font-size: 13px; font-weight: 700; margin-top: 4px; display: none; }
+    button.claim { width: 100%; padding: 14px; margin-top: 16px; border: none; border-radius: var(--radius); background: var(--ink); color: #fff; font-size: 16px; font-weight: 800; min-height: 48px; cursor: pointer; }
+    button.claim:disabled { opacity: .55; cursor: not-allowed; }
+    #payNotice { display: none; margin: 18px 0; padding: 12px; border-radius: var(--radius); background: var(--ok-bg); border: 1px solid #10b981; color: #065f46; font-weight: 800; text-align: center; }
+    .payments { margin-top: 24px; padding-top: 16px; border-top: 2px dashed var(--border); text-align: center; }
+    .fine { font-size: 13px; color: var(--muted); font-weight: 700; }
+    .soldout-note { display: none; margin: 18px 0; padding: 12px; border-radius: var(--radius); background: #f3f4f6; font-weight: 800; text-align: center; }
+    .venmo { display: inline-block; padding: 12px 18px; background: #008CFF; color: #fff; text-decoration: none; border-radius: 10px; font-weight: 800; min-height: 44px; }
+    .sync { text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; min-height: 16px; }
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="pool-name">
+      <div class="title-line1">McV Class of 2027</div>
+      <div class="title-line2">5x5 Squares</div>
+    </div>
+    <h2>Claim a Square</h2>
+    <div class="countdown green" id="countdown">
+      <div class="big" id="countBig">Loading…</div>
+      <div class="small" id="countSmall"></div>
+    </div>
+    <div class="stats" id="stats">20pts / Box&nbsp;&nbsp;&nbsp;F-300&nbsp;&nbsp;&nbsp;H-150</div>
+    <a class="sheet-link"
+       href="https://docs.google.com/spreadsheets/d/11y80VFlvNxcUIgyBTEdM6TQPunNnNSgGsGHvPTB8Au8/edit?usp=sharing&gid=1641273070#gid=1641273070"
+       target="_blank"
+       rel="noopener">
+      Link to Player Sheet
+    </a>
+    <div class="grid" id="grid" role="grid" aria-label="25 squares"></div>
+    <div id="selectedBox" style="font-weight:800;text-align:center;margin:8px 0;">Selected: None</div>
+    <div class="sync" id="sync"></div>
+
+    <label for="name">Name *</label>
+    <input id="name" required autocomplete="name">
+    <label for="phone">Cell Phone (10 digits) *</label>
+    <input id="phone" inputmode="numeric" autocomplete="tel" required placeholder="Numbers only">
+    <label for="boxname">Box Name *</label>
+    <input id="boxname" maxlength="24" required placeholder="Appears in square">
+    <label for="email">Email *</label>
+    <input id="email" type="email" autocomplete="email" required placeholder="you@email.com">
+    <div class="field-error" id="formError"></div>
+
+    <button class="claim" id="claimBtn" type="button">Claim Square</button>
+    <div id="payNotice">Claim saved – please pay to secure your square.</div>
+    <div class="soldout-note" id="soldOutNote">SOLD OUT – All 25 squares claimed.</div>
+    <div class="payments" id="payments">
+      <p class="fine">Pay to hold your square</p>
+      <p style="margin:10px 0;">
+        <a class="venmo" href="https://tinyurl.com/5x5-Squares-Payment" target="_blank" rel="noopener">
+          Pay with Venmo
+        </a>
+      </p>
+      <p class="fine" style="margin-top:14px;">Zelle</p>
+      <p style="margin:4px 0;font-weight:800;">Michael Leake<br>(516) 860-8128</p>
+      <p style="margin:4px 0;font-weight:800;">
+        <a href="mailto:atyourserviceli247@gmail.com" style="color:#111827;text-decoration:none;">
+          atyourserviceli247@gmail.com
+        </a>
+      </p>
+      <p class="fine">Include your Box # in the payment note<br>Cash also accepted</p>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIuvkc6HFAN-68hlzng-jyQhwVuPgz-xlrvNVreat_oKp4AkozlrkjnCqND9jhEZ9Gnw/exec';
+    const TOTAL = 25;
+    const CACHE_KEY = 'mcv-squares-state-v1';
+
+    let selected = null;
+    let claimed = new Set();
+    let isSubmitting = false;
+    let justClaimed = false;
+    let inflight = null;
+    let pollTimer = 0;
+    let boxes = [];
+
+    const gridEl = document.getElementById('grid');
+    const countdownEl = document.getElementById('countdown');
+    const countBig = document.getElementById('countBig');
+    const countSmall = document.getElementById('countSmall');
+    const claimBtn = document.getElementById('claimBtn');
+    const payNotice = document.getElementById('payNotice');
+    const soldOutNote = document.getElementById('soldOutNote');
+    const paymentsEl = document.getElementById('payments');
+    const selectedBoxEl = document.getElementById('selectedBox');
+    const formError = document.getElementById('formError');
+    const syncEl = document.getElementById('sync');
+    const phoneEl = document.getElementById('phone');
+
+    function normalizeState(data) {
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data.claimed) ? data.claimed : [];
+      const nums = list.map(Number).filter((n) => n >= 1 && n <= TOTAL);
+      const claimedCount = typeof data.claimedCount === 'number'
+        ? data.claimedCount
+        : (typeof data.claimed === 'number' ? data.claimed : nums.length);
+      const remaining = typeof data.remaining === 'number' ? data.remaining : TOTAL - nums.length;
+      return { claimed: nums, claimedCount, remaining, total: data.total || TOTAL };
+    }
+
+    function isAbort(err) {
+      return err && (err.name === 'AbortError' || err.name === 'TimeoutError');
+    }
+
+    function abortableTimeout(ms) {
+      const c = new AbortController();
+      const t = setTimeout(() => c.abort(), ms);
+      return {
+        signal: c.signal,
+        abort() { clearTimeout(t); c.abort(); },
+        done() { clearTimeout(t); },
+      };
+    }
+
+    function persist(state) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(state)); } catch {}
+    }
+
+    function readCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        return raw ? normalizeState(JSON.parse(raw)) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function buildGrid() {
+      const frag = document.createDocumentFragment();
+      for (let i = 1; i <= TOTAL; i++) {
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.textContent = String(i);
+        box.dataset.box = String(i);
+        box.setAttribute('role', 'gridcell');
+        box.setAttribute('aria-label', 'Square ' + i);
+        frag.appendChild(box);
+      }
+      gridEl.appendChild(frag);
+      boxes = Array.from(gridEl.children);
+    }
+
+    gridEl.addEventListener('click', (e) => {
+      const el = e.target.closest('.box');
+      if (!el || claimBtn.disabled) return;
+      const num = Number(el.dataset.box);
+      if (claimed.has(num)) return;
+      if (selected) {
+        const prev = boxes[selected - 1];
+        if (prev) prev.classList.remove('selected');
+      }
+      el.classList.add('selected');
+      selected = num;
+      selectedBoxEl.textContent = 'Selected: ' + num;
+      if (justClaimed) {
+        justClaimed = false;
+        payNotice.style.display = 'none';
+      }
+    });
+
+    function applyClaimed() {
+      for (const box of boxes) {
+        const num = Number(box.dataset.box);
+        const taken = claimed.has(num);
+        if (box.classList.contains('claimed') !== taken) {
+          box.classList.toggle('claimed', taken);
+        }
+        if (taken && selected === num) {
+          box.classList.remove('selected');
+          selected = null;
+          selectedBoxEl.textContent = 'Selected: None';
+        }
+      }
+    }
+
+    function updateUI(state) {
+      const remaining = state ? state.remaining : TOTAL - claimed.size;
+      const claimedCount = state ? state.claimedCount : claimed.size;
+
+      countdownEl.className = 'countdown';
+      if (remaining <= 0) countdownEl.classList.add('soldout');
+      else if (remaining <= 5) countdownEl.classList.add('red');
+      else if (remaining <= 10) countdownEl.classList.add('yellow');
+      else countdownEl.classList.add('green');
+
+      if (remaining <= 0) {
+        countBig.innerHTML = '<strong>SOLD OUT</strong>';
+        countSmall.textContent = '';
+      } else {
+        countBig.textContent = remaining + ' Remaining';
+        countSmall.textContent = claimedCount + ' claimed';
+      }
+
+      const sold = remaining <= 0;
+      claimBtn.disabled = sold || isSubmitting;
+      paymentsEl.style.display = sold ? 'none' : 'block';
+      soldOutNote.style.display = sold ? 'block' : 'none';
+      if (!justClaimed) payNotice.style.display = 'none';
+    }
+
+    function applyState(state) {
+      claimed = new Set(state.claimed);
+      applyClaimed();
+      updateUI(state);
+      persist(state);
+    }
+
+    async function fetchState(signal) {
+      const opts = { redirect: 'follow', cache: 'no-store', signal };
+      try {
+        const res = await fetch(SCRIPT_URL + '?action=state', opts);
+        const data = await res.json();
+        if (data && Array.isArray(data.claimed)) return normalizeState(data);
+        if (Array.isArray(data)) return normalizeState({ claimed: data });
+      } catch (err) {
+        if (isAbort(err)) throw err;
+      }
+      const [claimedRes, statsRes] = await Promise.all([
+        fetch(SCRIPT_URL + '?action=getClaimed', opts),
+        fetch(SCRIPT_URL + '?action=getStats', opts),
+      ]);
+      const claimedJson = await claimedRes.json();
+      const statsJson = await statsRes.json();
+      return normalizeState({
+        claimed: claimedJson,
+        claimedCount: statsJson.claimed,
+        remaining: statsJson.remaining,
+        total: statsJson.total,
+      });
+    }
+
+    async function loadData() {
+      if (document.hidden) return;
+      if (inflight) inflight.abort();
+      const req = abortableTimeout(12000);
+      inflight = req;
+      try {
+        const state = await fetchState(req.signal);
+        req.done();
+        applyState(state);
+        syncEl.textContent = '';
+      } catch (err) {
+        if (!isAbort(err)) {
+          console.error(err);
+          syncEl.textContent = 'Could not refresh. Showing last known board.';
+          updateUI();
+        }
+      } finally {
+        if (inflight === req) inflight = null;
+      }
+    }
+
+    function pollDelay() {
+      if (claimed.size >= TOTAL) return 0;
+      if (document.hidden) return 60000;
+      if (TOTAL - claimed.size <= 5) return 8000;
+      return 30000;
+    }
+
+    function schedulePoll() {
+      clearTimeout(pollTimer);
+      const ms = pollDelay();
+      if (!ms) return;
+      pollTimer = setTimeout(async () => {
+        await loadData();
+        schedulePoll();
+      }, ms);
+    }
+
+    function showError(msg) {
+      formError.style.display = 'block';
+      formError.textContent = msg;
+    }
+
+    function clearError() {
+      formError.style.display = 'none';
+      formError.textContent = '';
+    }
+
+    function resetButton() {
+      isSubmitting = false;
+      claimBtn.disabled = claimed.size >= TOTAL;
+      claimBtn.textContent = 'Claim Square';
+    }
+
+    phoneEl.addEventListener('input', () => {
+      phoneEl.value = phoneEl.value.replace(/\D/g, '').slice(0, 10);
+    });
+
+    async function submitClaim() {
+      if (isSubmitting) return;
+      clearError();
+      if (!selected) {
+        showError('Pick a square first.');
+        return;
+      }
+      const payload = {
+        box: selected,
+        name: document.getElementById('name').value.trim(),
+        phone: phoneEl.value.replace(/\D/g, ''),
+        boxName: document.getElementById('boxname').value.trim(),
+        email: document.getElementById('email').value.trim(),
+      };
+      if (!payload.name || payload.phone.length !== 10 || !payload.boxName || !payload.email.includes('@')) {
+        showError('All fields are required. Phone must be 10 digits.');
+        return;
+      }
+
+      isSubmitting = true;
+      claimBtn.disabled = true;
+      claimBtn.textContent = 'Saving…';
+
+      const req = abortableTimeout(15000);
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+          signal: req.signal,
+        });
+        req.done();
+        const result = await res.json();
+        if (result.error) throw new Error(result.error);
+
+        if (Array.isArray(result.claimed)) {
+          applyState(normalizeState(result));
+        } else {
+          claimed.add(payload.box);
+          applyClaimed();
+          await loadData();
+        }
+
+        justClaimed = true;
+        payNotice.style.display = 'block';
+        selected = null;
+        selectedBoxEl.textContent = 'Selected: None';
+        boxes.forEach((b) => b.classList.remove('selected'));
+        paymentsEl.scrollIntoView({ behavior: 'smooth' });
+        schedulePoll();
+      } catch (err) {
+        showError(err.message || 'Claim failed.');
+        await loadData();
+      } finally {
+        resetButton();
+      }
+    }
+
+    claimBtn.addEventListener('click', submitClaim);
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        loadData().then(schedulePoll);
+      } else {
+        schedulePoll();
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+
+    buildGrid();
+    const cached = readCache();
+    if (cached) applyState(cached);
+    loadData().then(schedulePoll);
+  </script>
+</body>
+</html>
